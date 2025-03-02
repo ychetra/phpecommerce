@@ -5,7 +5,7 @@ require_once 'admin/view/settings/crud.php';
 $settings = getSettings();
 
 // Display the logo
-$logo_path = $settings['site_logo'] ?? 'theme-assets/images/logo/logo.png';
+$logo_path = $settings['site_logo'] ?? 'admin/uploads/logo/site_logo.png';
 ?>
 
 <!DOCTYPE html>
@@ -17,7 +17,7 @@ $logo_path = $settings['site_logo'] ?? 'theme-assets/images/logo/logo.png';
 </head>
 <body>
     <div class="logo-container">
-        <img src="<?php echo htmlspecialchars($logo_path); ?>" alt="Site Logo">
+        <img src="<?php echo htmlspecialchars("admin/uploads/logo/site_logo.png"); ?>" alt="Site Logo">
     </div>
 </body>
 </html>

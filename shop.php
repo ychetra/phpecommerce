@@ -44,31 +44,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
 <?php include "include/header.php" ?>
     <!-- ... (existing content) ... -->
+    <?php
+require_once 'admin/config/Database.php';
+
+function getAllProducts() {
+    global $pdo;
+    $stmt = $pdo->query("SELECT p.*, c.name as category_name 
+                         FROM products p 
+                         LEFT JOIN categories c ON p.category_id = c.id 
+                         ORDER BY p.id DESC");
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+$products = getAllProducts();
+
+foreach ($products as $product): ?>
     <div class="col-md-2">
         <div class="card mb-4 product-wap rounded-0">
             <div class="card rounded-0">
-                <a href="shop-single.php" class="product-image-link" style="display: block; text-decoration: none;">
+                <a href="shop-single.php?id=<?= $product['id'] ?>" class="product-image-link" style="display: block; text-decoration: none;">
                     <div class="product-image-container" style="background-color: #f0f8ff; display: flex; justify-content: center; align-items: center; padding: 20px; transition: opacity 0.3s ease;">
-                        <img class="card-img rounded-0 img-fluid" src="assets/img/shop_01.jpg" alt="Product Image" style="max-width: 200px;">
+                        <img class="card-img rounded-0 img-fluid" src="<?= htmlspecialchars($product['image_path']) ?>" alt="<?= htmlspecialchars($product['name']) ?>" style="max-width: 200px;">
                     </div>
                 </a>
                 <div class="card-body text-center" style="padding: 15px;">
-                    <a href="shop-single.php" class="card-title" style="text-decoration: none;"><h5>Oupidatat non</h5></a>
+                    <a href="shop-single.php?id=<?= $product['id'] ?>" class="card-title" style="text-decoration: none;">
+                        <h5><?= htmlspecialchars($product['name']) ?></h5>
+                    </a>
                     <p class="card-text">
                         <span style="color: #ff0000; font-weight: bold;">SALE!</span><br>
-                        225.00$
+                        <?= number_format($product['price'], 2) ?>$
                     </p>
-                    <form method="POST" action="" id="product-form">
-                        <input type="hidden" name="product-title" value="Oupidatat non">
-                        <select name="product-size" class="form-select mb-3" required>
-                            <option value="S">Small</option>
-                            <option value="M">Medium</option>
-                            <option value="L">Large</option>
-                            <option value="XL">Extra Large</option>
-                        </select>
+                    <form method="POST" action="cart.php">
+                        <input type="hidden" name="product-id" value="<?= $product['id'] ?>">        
+                        <input type="hidden" name="product-title" value="<?= htmlspecialchars($product['name']) ?>">        
                         <input type="hidden" name="product-quantity" value="1">
-                        <input type="hidden" name="product-price" value="225.00">
-                        <button type="submit" class="btn btn-outline-dark mt-2" name="submit" value="addtocard" style="border-radius: 0; padding: 8px 20px;">
+                        <input type="hidden" name="product-price" value="<?= $product['price'] ?>">
+                        <button type="submit" class="btn btn-outline-dark mt-2" name="submit" value="addtocart" style="border-radius: 0; padding: 8px 20px;">
                             Add to cart
                         </button>
                     </form>
@@ -76,6 +88,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             </div>
         </div>
     </div>
+<?php endforeach; ?>
+
 
 <style>
     .product-image-link:hover .product-image-container {
