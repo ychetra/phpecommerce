@@ -1,10 +1,10 @@
+<?php require_once 'init.php'; ?>
 <!DOCTYPE html>
 <html lang="en">
-<?php include "include/head.php" ?>
-
-  <body>
-
-    <!-- Header -->
+<head>
+    <?php include "include/head.php" ?>
+</head>
+<body>
     <?php include "include/header.php" ?>
     <!-- Close Header -->
 
@@ -111,7 +111,7 @@
           <div class="row">
             <div class="col text-end mt-2">
               <button type="submit" class="btn btn-success btn-lg px-3">
-                Let’s Talk
+                Let's Talk
               </button>
             </div>
           </div>

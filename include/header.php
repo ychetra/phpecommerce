@@ -1,3 +1,10 @@
+<?php
+// Initialize cart count
+$cartCount = 0;
+if (isset($_SESSION['cart']) && !empty($_SESSION['cart'])) {
+    $cartCount = array_sum(array_column($_SESSION['cart'], 'quantity'));
+}
+?>
 <nav class="navbar navbar-expand-lg navbar-light shadow">
     <div class="container d-flex justify-content-between align-items-center">
 
@@ -39,13 +46,14 @@
                 <a class="nav-icon d-none d-lg-inline" href="#" data-bs-toggle="modal" data-bs-target="#templatemo_search">
                     <i class="fa fa-fw fa-search text-dark mr-2"></i>
                 </a>
-                <a class="nav-icon position-relative text-decoration-none" href="cart.php">
-                    <i class="fa fa-fw fa-cart-arrow-down text-dark mr-1"></i>
-                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger cart-count">
-                        <?php echo isset($_SESSION['cart']) ? array_sum(array_column($_SESSION['cart'], 'quantity')) : 0; ?>
-                        <span class="visually-hidden">items in cart</span>
-                    </span>
-                </a>
+                <div class="cart-icon">
+                    <a class="nav-icon position-relative text-decoration-none" href="cart.php">
+                        <i class="fa fa-fw fa-cart-arrow-down text-dark mr-1"></i>
+                        <span class="cart-count position-absolute top-0 left-100 translate-middle badge rounded-pill bg-light text-dark">
+                            <?= $cartCount ?>
+                        </span>
+                    </a>
+                </div>
                 <a class="nav-icon d-none d-lg-inline" href="signup.php" data-bs-target="#templatemo_user">
                     <i class="fa fa-fw fa-user text-dark mr-2"></i>
                 </a>

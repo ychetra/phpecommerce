@@ -17,4 +17,4 @@ function getProductById($id) {
     $stmt->execute([$id]);
     return $stmt->fetch(PDO::FETCH_ASSOC);
 }
-?> 
+?>  

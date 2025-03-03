@@ -1,7 +1,10 @@
+<?php require_once 'init.php'; ?>
 <!DOCTYPE html>
 <html lang="en">
 
-<?php include "include/head.php" ?>
+<head>
+    <?php include "include/head.php" ?>
+</head>
 
 <body>
     <!-- Header -->
