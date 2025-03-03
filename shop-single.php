@@ -1,36 +1,51 @@
 <?php
 // Start a session to keep track of the shopping cart
 session_start();
+require_once __DIR__ . '/admin/config/Database.php';
+require_once __DIR__ . '/functions/product_functions.php';
+
+// Initialize database connection
+$database = new Database();
+$pdo = $database->getConnection();
+
+// Get product ID from URL
+$product_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+
+// Get the product
+$product = getProductById($product_id);
+
+// Redirect if product not found
+if (!$product) {
+    header('Location: shop.php');
+    exit;
+}
 
 // If someone clicks "Add to Cart" using a special request (AJAX), handle it here
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'add_to_cart') {
-    // Get the product details from the form
-    if (isset($_POST['product-title'], $_POST['product-size'], $_POST['product-quantity'], $_POST['product-price'])) {
-        $product = [
-            'title' => $_POST['product-title'],    // Product name
-            'size' => $_POST['product-size'],      // Product size (S, M, L, XL)
-            'quantity' => (int)$_POST['product-quantity'], // How many items
-            'price' => (float)$_POST['product-price']     // Price of the item
+    if (isset($_POST['product-title'], $_POST['product-quantity'], $_POST['product-price'])) {
+        $cartItem = [
+            'product_id' => $product_id,
+            'name' => $_POST['product-title'],
+            'quantity' => (int)$_POST['product-quantity'],
+            'price' => (float)$_POST['product-price']
         ];
 
-        // Check if this product (with the same name and size) is already in the cart
+        // Check if product already exists in cart
         $found = false;
         if (isset($_SESSION['cart']) && !empty($_SESSION['cart'])) {
             foreach ($_SESSION['cart'] as &$item) {
-                if ($item['title'] === $product['title'] && $item['size'] === $product['size']) {
-                    $item['quantity'] += $product['quantity']; // Add to the existing quantity
+                if ($item['product_id'] === $product_id) {
+                    $item['quantity'] += $cartItem['quantity'];
                     $found = true;
                     break;
                 }
             }
         }
 
-        // If the product isn’t in the cart, add it as a new item
         if (!$found) {
-            $_SESSION['cart'][] = $product;
+            $_SESSION['cart'][] = $cartItem;
         }
 
-        // Send back the total number of items in the cart as a simple message
         header('Content-Type: application/json');
         echo json_encode(['cartCount' => array_sum(array_column($_SESSION['cart'], 'quantity'))]);
         exit;
@@ -51,30 +66,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         <div class="row">
             <!-- Product Image -->
             <div class="col-md-6">
-                <img src="activewear-image.jpg" alt="Oupidatat non" class="img-fluid" style="max-width: 100%;">
+                <img src="admin/<?= htmlspecialchars($product['image_path'] ?: 'assets/img/default-product.jpg') ?>" 
+                     alt="<?= htmlspecialchars($product['name']) ?>" 
+                     class="img-fluid" 
+                     style="max-width: 100%; object-fit: contain;">
             </div>
             
             <!-- Product Details -->
             <div class="col-md-6">
-                <h1>Oupidatat non</h1>
-                <p class="lead">$225.00</p>
-                <p>Great activewear for comfort during workouts.</p>
+                <h1><?= htmlspecialchars($product['name']) ?></h1>
+                <p class="lead">$<?= number_format($product['price'], 2) ?></p>
+                <p><?= htmlspecialchars($product['description']) ?></p>
                 
                 <form method="POST" action="" id="product-form">
-                    <input type="hidden" name="product-title" value="Oupidatat non">
-                    <input type="hidden" name="product-price" value="225.00">
+                    <input type="hidden" name="product-title" value="<?= htmlspecialchars($product['name']) ?>">
+                    <input type="hidden" name="product-price" value="<?= $product['price'] ?>">
                     
-                    <!-- Size Selection -->
-                    <div class="mb-3">
-                        <label for="product-size">Size:</label>
-                        <select name="product-size" id="product-size" class="form-select" required>
-                            <option value="S">Small</option>
-                            <option value="M">Medium</option>
-                            <option value="L">Large</option>
-                            <option value="XL">Extra Large</option>
-                        </select>
-                    </div>
-
                     <!-- Quantity Buttons -->
                     <div class="mb-3">
                         <label>Quantity:</label>
@@ -95,41 +102,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
     <!-- Simple JavaScript for Quantity and Cart -->
     <script>
-        // Add 1 to quantity when clicking the plus button
+        // Quantity buttons functionality
         document.getElementById('btn-plus').addEventListener('click', function(e) {
-            e.preventDefault(); // Stop the button from doing anything else
-            let qty = parseInt(document.getElementById('var-value').textContent); // Get current number
-            qty++; // Increase by 1
-            document.getElementById('var-value').textContent = qty; // Show new number
-            document.getElementById('product-quantity').value = qty; // Update hidden input
+            e.preventDefault();
+            let qty = parseInt(document.getElementById('var-value').textContent);
+            qty++;
+            document.getElementById('var-value').textContent = qty;
+            document.getElementById('product-quantity').value = qty;
         });
 
-        // Subtract 1 from quantity when clicking the minus button (if more than 1)
         document.getElementById('btn-minus').addEventListener('click', function(e) {
-            e.preventDefault(); // Stop the button from doing anything else
-            let qty = parseInt(document.getElementById('var-value').textContent); // Get current number
-            if (qty > 1) { // Only decrease if more than 1
-                qty--; // Decrease by 1
-                document.getElementById('var-value').textContent = qty; // Show new number
-                document.getElementById('product-quantity').value = qty; // Update hidden input
+            e.preventDefault();
+            let qty = parseInt(document.getElementById('var-value').textContent);
+            if (qty > 1) {
+                qty--;
+                document.getElementById('var-value').textContent = qty;
+                document.getElementById('product-quantity').value = qty;
             }
         });
 
-        // Add product to cart without leaving the page
+        // AJAX add to cart
         document.getElementById('product-form').addEventListener('submit', function(e) {
-            e.preventDefault(); // Stay on this page
-            const formData = new FormData(this); // Get all form data
-            formData.append('action', 'add_to_cart'); // Tell the server it’s an add-to-cart request
+            e.preventDefault();
+            const formData = new FormData(this);
+            formData.append('action', 'add_to_cart');
 
-            fetch('', { // Send data to the same page
+            fetch('', {
                 method: 'POST',
                 body: formData
             })
-            .then(response => response.json()) // Get the response as JSON
+            .then(response => response.json())
             .then(data => {
-                document.querySelector('.cart-count').textContent = data.cartCount; // Update cart number in header
+                document.querySelector('.cart-count').textContent = data.cartCount;
             })
-            .catch(error => console.error('Error:', error)); // Log any errors
+            .catch(error => console.error('Error:', error));
         });
     </script>
 

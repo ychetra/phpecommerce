@@ -2,12 +2,27 @@
 require_once 'view/products/crud.php';
 require_once 'view/categories/crud.php';
 
+$message = '';
+$messageType = '';
+
 if(isset($_POST['delete']) && isset($_POST['id'])) {
-    deleteProduct($_POST['id']);
+    if(deleteProduct($_POST['id'])) {
+        $message = "Product deleted successfully!";
+        $messageType = "success";
+    } else {
+        $message = "Error deleting product. Please try again.";
+        $messageType = "danger";
+    }
 }
 
 if(isset($_POST['save'])) {
-    saveProduct($_POST, $_FILES);
+    if(saveProduct($_POST, $_FILES)) {
+        $message = "Product saved successfully!";
+        $messageType = "success";
+    } else {
+        $message = "Error saving product. Please try again.";
+        $messageType = "danger";
+    }
 }
 
 $categories = getAllCategories();
@@ -23,6 +38,20 @@ $products = getAllProducts();
             </div>
         </div>
         <div class="content-body">
+            <!-- Move the alert here, right at the start of content-body -->
+            <?php if($message): ?>
+            <div class="row">
+                <div class="col-12">
+                    <div class="alert alert-<?= $messageType ?> alert-dismissible fade show" role="alert">
+                        <?= htmlspecialchars($message) ?>
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
+
             <div class="row">
                 <div class="col-12">
                     <div class="card">

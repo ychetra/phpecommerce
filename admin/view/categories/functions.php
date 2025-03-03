@@ -1,5 +1,5 @@
 <?php
-require_once 'include/db.php';
+require_once __DIR__ . '/../../config/Database.php';
 
 function deleteCategory($id) {
     global $pdo;

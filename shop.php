@@ -1,7 +1,13 @@
 <?php
-session_start(); // Add at the very top
+session_start();
+require_once __DIR__ . '/admin/config/Database.php';
+require_once __DIR__ . '/functions/product_functions.php';
 
-// Handle AJAX request for adding to cart
+$database = new Database();
+$pdo = $database->getConnection();
+
+$products = getAllProducts();
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'add_to_cart') {
     if (isset($_POST['product-title'], $_POST['product-size'], $_POST['product-quantity'], $_POST['product-price'])) {
         $product = [
@@ -11,24 +17,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             'price' => (float)$_POST['product-price']
         ];
 
-        // Check if product already exists in cart to update quantity
         $found = false;
         if (isset($_SESSION['cart']) && !empty($_SESSION['cart'])) {
             foreach ($_SESSION['cart'] as &$item) {
                 if ($item['title'] === $product['title'] && $item['size'] === $product['size']) {
-                    $item['quantity'] += $product['quantity']; // Add to existing quantity
+                    $item['quantity'] += $product['quantity'];
                     $found = true;
                     break;
                 }
             }
         }
 
-        // If product not found, add it to cart
         if (!$found) {
             $_SESSION['cart'][] = $product;
         }
 
-        // Return the total cart quantity as JSON
         header('Content-Type: application/json');
         echo json_encode(['cartCount' => array_sum(array_column($_SESSION['cart'], 'quantity'))]);
         exit;
@@ -43,68 +46,103 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 <body>
 
 <?php include "include/header.php" ?>
-    <!-- ... (existing content) ... -->
-    <?php
-require_once 'admin/config/Database.php';
-
-function getAllProducts() {
-    global $pdo;
-    $stmt = $pdo->query("SELECT p.*, c.name as category_name 
-                         FROM products p 
-                         LEFT JOIN categories c ON p.category_id = c.id 
-                         ORDER BY p.id DESC");
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
-}
-
-$products = getAllProducts();
-
-foreach ($products as $product): ?>
-    <div class="col-md-2">
-        <div class="card mb-4 product-wap rounded-0">
-            <div class="card rounded-0">
-                <a href="shop-single.php?id=<?= $product['id'] ?>" class="product-image-link" style="display: block; text-decoration: none;">
-                    <div class="product-image-container" style="background-color: #f0f8ff; display: flex; justify-content: center; align-items: center; padding: 20px; transition: opacity 0.3s ease;">
-                        <img class="card-img rounded-0 img-fluid" src="<?= htmlspecialchars($product['image_path']) ?>" alt="<?= htmlspecialchars($product['name']) ?>" style="max-width: 200px;">
-                    </div>
-                </a>
-                <div class="card-body text-center" style="padding: 15px;">
-                    <a href="shop-single.php?id=<?= $product['id'] ?>" class="card-title" style="text-decoration: none;">
-                        <h5><?= htmlspecialchars($product['name']) ?></h5>
+    <div class="row">
+        <?php foreach($products as $product): ?>
+        <div class="col-md-4 mb-4">
+            <div class="card product-wap rounded-0 product-card">
+                <div class="card rounded-0">
+                    <a href="shop-single.php?id=<?= $product['id'] ?>" class="product-image-link" style="display: block; text-decoration: none;">
+                        <div class="product-image-container">
+                            <img class="card-img rounded-0 img-fluid" 
+                                 src="admin/<?= htmlspecialchars($product['image_path'] ?: 'assets/img/default-product.jpg') ?>" 
+                                 alt="<?= htmlspecialchars($product['name']) ?>">
+                        </div>
                     </a>
-                    <p class="card-text">
-                        <span style="color: #ff0000; font-weight: bold;">SALE!</span><br>
-                        <?= number_format($product['price'], 2) ?>$
-                    </p>
-                    <form method="POST" action="cart.php">
-                        <input type="hidden" name="product-id" value="<?= $product['id'] ?>">        
-                        <input type="hidden" name="product-title" value="<?= htmlspecialchars($product['name']) ?>">        
-                        <input type="hidden" name="product-quantity" value="1">
-                        <input type="hidden" name="product-price" value="<?= $product['price'] ?>">
-                        <button type="submit" class="btn btn-outline-dark mt-2" name="submit" value="addtocart" style="border-radius: 0; padding: 8px 20px;">
-                            Add to cart
-                        </button>
-                    </form>
+                    <div class="card-body text-center">
+                        <a href="shop-single.php?id=<?= $product['id'] ?>" class="card-title" style="text-decoration: none;">
+                            <h5 class="product-title"><?= htmlspecialchars($product['name']) ?></h5>
+                        </a>
+                        <p class="card-text description-text">
+                            <span class="text-muted"><?= htmlspecialchars($product['description']) ?></span><br>
+                            $<?= number_format($product['price'], 2) ?>
+                        </p>
+                        <form method="POST" action="add-to-cart.php" class="product-form">
+                            <input type="hidden" name="product_id" value="<?= $product['id'] ?>">
+                            <input type="hidden" name="product_name" value="<?= htmlspecialchars($product['name']) ?>">
+                            <input type="hidden" name="quantity" value="1">
+                            <input type="hidden" name="price" value="<?= $product['price'] ?>">
+                            <button type="submit" class="btn btn-outline-dark mt-2" name="submit" value="addtocard" 
+                                    style="border-radius: 0; padding: 8px 20px;">
+                                Add to cart
+                            </button>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
+        <?php endforeach; ?>
     </div>
-<?php endforeach; ?>
-
 
 <style>
+    .product-card {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .product-image-container {
+        height: 200px;  /* Fixed height for image container */
+        background-color: #f0f8ff;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+        transition: opacity 0.3s ease;
+    }
+    
+    .product-image-container img {
+        max-height: 160px;  /* Leave some padding space */
+        width: auto;
+        object-fit: contain;
+    }
+    
+    .card-body {
+        flex: 1;  /* Take remaining space */
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .product-title {
+        height: 48px;  /* Fixed height for title - approximately 2 lines */
+        overflow: hidden;
+        margin-bottom: 10px;
+    }
+    
     .product-image-link:hover .product-image-container {
-        opacity: 0.4; /* Slightly fade the image on hover */
+        opacity: 0.4;
     }
     .product-image-link:hover .card-img {
-        cursor: pointer; /* Show pointer cursor on hover */
+        cursor: pointer;
+    }
+    .description-text span {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        height: 2.8em;
+        margin-bottom: 10px;
+    }
+    body {
+        overflow-x: hidden;
     }
 </style>
 
     </div>
                 <div div="row">
                     <ul class="pagination pagination-lg justify-content-end">
-                        <li class="page-item disabled">
-                            <a class="page-link active rounded-0 mr-3 shadow-sm border-top-0 border-left-0" href="#" tabindex="-1">1</a>
+                        <li class="page-item">
+                            <a class="page-link active rounded-0 mr-3 shadow-sm border-top-0 border-left-0" href="shop.php">1</a>
                         </li>
                         <li class="page-item">
                             <a class="page-link rounded-0 mr-3 shadow-sm border-top-0 border-left-0 text-dark" href="#">2</a>
@@ -119,34 +157,27 @@ foreach ($products as $product): ?>
         </div>
     </div>
 
-     <!-- Start Brands -->
-     <!-- <section class="bg-light py-5"> -->
         <div class="container my-4">
             <div class="row text-center py-3">
                 <div class="col-lg-6 m-auto">
                     <h1 class="h1">Our Brands</h1>
-                    <p>
+                    <p>     
                         Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod
                         Lorem ipsum dolor sit amet.
                     </p>
                 </div>
                 <div class="col-lg-9 m-auto tempaltemo-carousel">
                     <div class="row d-flex flex-row">
-                        <!--Controls-->
                         <div class="col-1 align-self-center">
                             <a class="h1" href="#multi-item-example" role="button" data-bs-slide="prev">
                                 <i class="text-light fas fa-chevron-left"></i>
                             </a>
                         </div>
-                        <!--End Controls-->
 
-                        <!--Carousel Wrapper-->
                         <div class="col">
                             <div class="carousel slide carousel-multi-item pt-2 pt-md-0" id="multi-item-example" data-bs-ride="carousel">
-                                <!--Slides-->
                                 <div class="carousel-inner product-links-wap" role="listbox">
 
-                                    <!--First slide-->
                                     <div class="carousel-item active">
                                         <div class="row">
                                             <div class="col-3 p-md-5">
@@ -163,9 +194,7 @@ foreach ($products as $product): ?>
                                             </div>
                                         </div>
                                     </div>
-                                    <!--End First slide-->
 
-                                    <!--Second slide-->
                                     <div class="carousel-item">
                                         <div class="row">
                                             <div class="col-3 p-md-5">
@@ -182,9 +211,7 @@ foreach ($products as $product): ?>
                                             </div>
                                         </div>
                                     </div>
-                                    <!--End Second slide-->
 
-                                    <!--Third slide-->
                                     <div class="carousel-item">
                                         <div class="row">
                                             <div class="col-3 p-md-5">
@@ -201,56 +228,51 @@ foreach ($products as $product): ?>
                                             </div>
                                         </div>
                                     </div>
-                                    <!--End Third slide-->
 
                                 </div>
-                                <!--End Slides-->
                             </div>
                         </div>
-                        <!--End Carousel Wrapper-->
 
-                        <!--Controls-->
                         <div class="col-1 align-self-center">
                             <a class="h1" href="#multi-item-example" role="button" data-bs-slide="next">
                                 <i class="text-light fas fa-chevron-right"></i>
                             </a>
                         </div>
-                        <!--End Controls-->
                     </div>
                 </div>
             </div>
         </div>
-    <!-- </section> -->
-    <!--End Brands -->
 
     <?php include "include/footer.php" ?>
      
-    <!-- Start Script -->
     <script src="assets/js/jquery-1.11.0.min.js"></script>
     <script src="assets/js/jquery-migrate-1.2.1.min.js"></script>
     <script src="assets/js/bootstrap.bundle.min.js"></script>
     <script src="assets/js/templatemo.js"></script>
     <script src="assets/js/custom.js"></script>
     
-    <!-- Quantity and Cart Update Script -->
     <script>
-        // Handle Add to Cart via AJAX (no redirect, no alert)
-        document.querySelector('#product-form').addEventListener('submit', function(e) {
-            e.preventDefault(); // Prevent page redirect
-            const formData = new FormData(this);
-            formData.append('action', 'add_to_cart');
+        document.querySelectorAll('.product-form').forEach(form => {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const formData = new FormData(this);
 
-            fetch('', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                document.querySelector('.cart-count').textContent = data.cartCount; // Update cart count in header
-            })
-            .catch(error => console.error('Error:', error));
+                fetch('add-to-cart.php', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.querySelector('.cart-count').textContent = data.cartCount;
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+            });
         });
     </script>
-    <!-- End Script -->
 </body>
 </html>

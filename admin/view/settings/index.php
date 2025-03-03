@@ -1,8 +1,17 @@
 <?php
 require_once 'view/settings/crud.php';
 
+$message = '';
+$messageType = '';
+
 if(isset($_POST['save'])) {
-    saveSettings($_POST, $_FILES);
+    if(saveSettings($_POST, $_FILES)) {
+        $message = "Settings saved successfully!";
+        $messageType = "success";
+    } else {
+        $message = "Error saving settings. Please try again.";
+        $messageType = "danger";
+    }
 }
 
 $settings = getSettings();
@@ -17,6 +26,15 @@ $settings = getSettings();
             </div>
         </div>
         <div class="content-body">
+            <?php if($message): ?>
+            <div class="alert alert-<?= $messageType ?> alert-dismissible fade show" role="alert">
+                <?= htmlspecialchars($message) ?>
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <?php endif; ?>
+            
             <div class="row">
                 <div class="col-12">
                     <div class="card">

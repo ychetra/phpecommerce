@@ -1,5 +1,9 @@
 <?php
-require_once 'include/db.php';
+require_once __DIR__ . '/../../config/Database.php';
+
+// Initialize database connection
+$database = new Database();
+$pdo = $database->getConnection();
 
 function getAllCategories() {
     global $pdo;
