@@ -32,3 +32,13 @@ $settings = getSettings();
     <!-- END Custom CSS-->
 </head>
 <body class="vertical-layout vertical-menu 2-columns menu-expanded fixed-navbar" data-open="click" data-menu="vertical-menu" data-color="bg-gradient-x-purple-blue" data-col="2-columns"> 
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <!-- ... other navbar items ... -->
+    <div class="navbar-nav ms-auto">
+        <a href="logout.php" class="nav-link">
+            <i class="fas fa-sign-out-alt"></i> Logout
+        </a>
+    </div>
+</nav>
+</body>
+</html> 

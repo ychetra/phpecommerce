@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/include/check-auth.php';
 include 'include/header.php';
 include 'include/navbar.php';
 include 'include/sidebar.php';
